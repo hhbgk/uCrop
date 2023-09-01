@@ -1,2 +1,3 @@
 include ':ucrop', ':sample'
-include ':clipimage'
+include ':cropImage', ':clipimage'
+include ':croppingimagesample'
