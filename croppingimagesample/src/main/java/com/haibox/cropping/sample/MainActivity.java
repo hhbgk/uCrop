@@ -7,11 +7,15 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -24,8 +28,6 @@ import com.haibox.cropimage.ClipImageActivity;
 import com.haibox.cropimage.ClipView;
 import com.haibox.cropimage.util.FileUtils;
 import com.haibox.cropping.sample.databinding.ActivityMainBinding;
-
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -50,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-
+        Log.i(TAG, "VERSION SDK INT="+ Build.VERSION.SDK_INT);
         binding.llQQ.setOnClickListener(listener);
         binding.llWechat.setOnClickListener(listener);
         binding.llWechatGrid.setOnClickListener(listener);
@@ -115,57 +117,43 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private Uri uri = null;
-    private final ActivityResultLauncher<Uri> launchTakePhoto =
-            registerForActivityResult(new ActivityResultContracts.TakePicture(), result -> {
-                if (result) {
-                    binding.ivAvatar.setImageURI(uri);
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-
-//                    saveBitmap(result, file);
-
-//                            try {
-//                                FileOutputStream fos = new FileOutputStream(file);
-//                                result.compress(Bitmap.CompressFormat.JPEG, 100, fos);
-//                                fos.close();
-//                            } catch (Exception e) {
-//                                e.printStackTrace();
-//                            }
-
-//                    Uri uri = FileProvider.getUriForFile(this, getApplicationContext().getPackageName() + ".provider", tempFile);
-//                            Uri uri = FileProvider.getUriForFile(getApplicationContext(), getPackageName() + ".provider", file);
-
-//                            Uri uri = Uri.fromFile(file);
-//                            if (uri == null) {
-//                                Log.e(TAG, "uri is nullllllllllllll");
-//                                return;
-//                            }
-
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    gotoClipActivity(uri);
-                                }
-                            });
-                        }
-                    }).start();
-
-                } else {
-                    Log.e(TAG, "Take photo error");
-                }
-            });
+    private File photoFile = null;
+    private Uri photoUri = null;
+    private final ActivityResultLauncher<Intent> launchTakePhoto = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
+        @Override
+        public void onActivityResult(ActivityResult result) {
+            if (result.getResultCode() == RESULT_OK) {
+//                binding.ivAvatar.setImageURI(photoUri);
+                Bitmap bitMap = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
+                binding.ivAvatar.setImageBitmap(bitMap);
+                gotoClipActivity(Uri.fromFile(photoFile));
+            }
+        }
+    });
     private void takePicture() {
         String filename = "img-" + simpleDateFormat.format(System.currentTimeMillis()) + ".jpg";
-        File file = new File(getCacheDir(), filename);
+        photoFile = new File(getExternalCacheDir(), filename);
+        Log.i(TAG, "file Path=" + photoFile.getAbsolutePath());
+
 //        String path = getExternalFilesDir(null).getAbsolutePath() + "/"+ filename;
-        uri = FileProvider.getUriForFile(getApplicationContext(), getPackageName() + ".provider", file);
-        Log.i(TAG, "getPath=" + uri.getPath());
-        Log.i(TAG, "getScheme=" + uri.getScheme());
-        Log.i(TAG, "getAuthority=" + uri.getAuthority());
-        Log.i(TAG, "uri=" + uri.toString());
-        launchTakePhoto.launch(uri);
+//        uri = FileProvider.getUriForFile(getApplicationContext(), getPackageName() + ".provider", file);
+
+       Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (Build.VERSION.SDK_INT >= 24) {
+            // 设置7.0中共享文件，分享路径定义在xml/file_paths.xml
+            intent.setFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            Uri photoUri = FileProvider.getUriForFile(this, getPackageName() + ".provider", photoFile);
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+            grantUriPermission(getPackageName(), photoUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            Log.i(TAG, "getPath=" + photoUri.getPath());
+            Log.i(TAG, "getScheme=" + photoUri.getScheme());
+            Log.i(TAG, "getAuthority=" + photoUri.getAuthority());
+            Log.i(TAG, "uri=" + photoUri);
+        } else {
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
+        }
+        launchTakePhoto.launch(intent);
     }
 
     private void checkStoragePermission() {
