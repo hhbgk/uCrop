@@ -10,8 +10,9 @@ android {
     defaultConfig {
         minSdk 21
         targetSdk 33
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        versionCode 1
+        versionName "1.0.0"
+        archivesBaseName = "cropImage-v${versionName}"
         consumerProguardFiles "consumer-rules.pro"
     }
 
