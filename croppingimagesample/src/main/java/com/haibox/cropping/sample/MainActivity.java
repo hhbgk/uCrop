@@ -45,6 +45,9 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private SelectionPopupWindow selectionPopup;
     private int selectType = -1;
+    private File photoFile = null;
+    private Uri photoUri = null;
+    private long lastTime;
     private final String TMP_FILENAME = "cropping-image.jpeg";
     private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault());
     @Override
@@ -100,6 +103,8 @@ public class MainActivity extends AppCompatActivity {
             selectionPopup.hide();
         }
     }
+
+    //    ------------------------------------------Take picture-----------------------------------------
     private final ActivityResultLauncher<String> launchCameraPermission =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), result -> {
                 if (result) {
@@ -117,9 +122,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-    private File photoFile = null;
-    private Uri photoUri = null;
     private final ActivityResultLauncher<Uri> launchTakePicture = registerForActivityResult(
             new ActivityResultContracts.TakePicture(), new ActivityResultCallback<Boolean>() {
                 @Override
@@ -163,6 +165,7 @@ public class MainActivity extends AppCompatActivity {
                     Log.e(TAG, "No storage permission");
                 }
             });
+//    ------------------------------------------picture Picker-----------------------------------------
     private void launchPicturePicker() {
         if (photoFile != null && photoFile.exists()) {
             if (!photoFile.delete()) {
@@ -178,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
                     Log.e(TAG, "Picker uri is null");
                     return;
                 }
-                Log.i(TAG, "path=" + result.getPath());
+                lastTime = System.currentTimeMillis();
                 binding.ivAvatar.setImageURI(result);
                 copyPicturePicker(result);// picture picker
             });
@@ -195,7 +198,6 @@ public class MainActivity extends AppCompatActivity {
                         throw new RuntimeException(e);
                     }
 
-                    Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
                     photoFile = new File(getExternalCacheDir(), TMP_FILENAME);
                     OutputStream outputStream;
                     try {
@@ -203,7 +205,12 @@ public class MainActivity extends AppCompatActivity {
                     } catch (FileNotFoundException e) {
                         throw new RuntimeException(e);
                     }
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 10, outputStream);
+
+                    try {
+                        copyFile(inputStream, outputStream);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                     runOnUiThread(() -> gotoClipActivity(photoFile.getAbsolutePath()));
                     try {
                         inputStream.close();
@@ -211,11 +218,19 @@ public class MainActivity extends AppCompatActivity {
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
+                    Log.w(TAG, "take time=" + (System.currentTimeMillis() - lastTime));
                 }
             }).start();
         }
     }
 
+    public static void copyFile(InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[10 * 1024];
+        int read;
+        while ((read = in.read(buffer)) != -1) {
+            out.write(buffer, 0, read);
+        }
+    }
     private void gotoClipActivity(String path) {
         launcherCroppingActivity.launch(CroppingActivity.getClipIntent(MainActivity.this, path, selectType));
     }

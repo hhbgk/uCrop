@@ -50,7 +50,6 @@ public class ClipImageActivity extends AppCompatActivity {
         Log.i(TAG, "onCreate: Type =" + mType + ", " + uri);
 
         //设置点击事件监听器
-        binding.ivBack.setOnClickListener(v -> finish());
         binding.btnCancel.setOnClickListener(v -> finish());
         binding.btnOk.setOnClickListener(v -> generateUriAndReturn());
     }

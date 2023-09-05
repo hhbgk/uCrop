@@ -1,19 +1,14 @@
 package com.haibox.cropimage
 
-import android.R.attr.bitmap
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.haibox.cropimage.databinding.ActivityClipImageBinding
 import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.IOException
-import java.io.OutputStream
 
 
 class CroppingActivity: AppCompatActivity() {
@@ -46,14 +41,13 @@ class CroppingActivity: AppCompatActivity() {
         initData()
 
         //设置点击事件监听器
-        binding.ivBack.setOnClickListener { finish() }
         binding.btnCancel.setOnClickListener { finish() }
         binding.btnOk.setOnClickListener { generateUriAndReturn() }
     }
 
     private fun initData() {
         val path = intent.getStringExtra(KEY_FILE_PATH)
-        Log.i(TAG, "onCreate: Type =$mType, $path")
+        Log.i(TAG, "Type =$mType, $path")
         //设置图片资源
         binding.clipViewLayout.setImageSrc(path)
     }
