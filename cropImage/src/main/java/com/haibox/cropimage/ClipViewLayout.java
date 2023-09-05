@@ -131,12 +131,12 @@ public class ClipViewLayout extends RelativeLayout {
     /**
      * 初始化图片
      */
-    public void setImageSrc(final Uri uri) {
+    public void setImageSrc(final String inputPath) {
         //需要等到imageView绘制完毕再初始化原图
         ViewTreeObserver observer = mImageView.getViewTreeObserver();
         observer.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             public void onGlobalLayout() {
-                initSrcPic(uri);
+                initSrcPic(inputPath);
                 mImageView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
             }
         });
@@ -147,26 +147,26 @@ public class ClipViewLayout extends RelativeLayout {
      * step 1: decode 出 720*1280 左右的照片  因为原图可能比较大 直接加载出来会OOM
      * step 2: 将图片缩放 移动到imageView 中间
      */
-    public void initSrcPic(Uri uri) {
-        if (uri == null) {
-            return;
+    public void initSrcPic(String inputPath) {
+        if (TextUtils.isEmpty(inputPath)) {
+            throw new NullPointerException("Input file path cannot empty");
         }
 
-        String path = FileUtils.getPath(getContext(), uri);
-        if (TextUtils.isEmpty(path)) {
-            Log.e(TAG, "Clip path is null=========");
-            path = new File(uri.getPath()).getAbsolutePath();
-        }
-        if (TextUtils.isEmpty(path)) {
-            Log.e(TAG, "Clip path is null");
-            return;
-        }
+//        String path = FileUtils.getPath(getContext(), uri);
+//        if (TextUtils.isEmpty(path)) {
+//            Log.e(TAG, "Clip path is null=========");
+//            path = new File(uri.getPath()).getAbsolutePath();
+//        }
+//        if (TextUtils.isEmpty(path)) {
+//            Log.e(TAG, "Clip path is null");
+//            return;
+//        }
 
-        int[] imageWidthHeight = BitmapUtil.getImageWidthHeight(path);
+        int[] imageWidthHeight = BitmapUtil.getImageWidthHeight(inputPath);
         int w = imageWidthHeight[0];
         int h = imageWidthHeight[1];
 
-        Bitmap bitmap = BitmapUtil.decodeSampledBitmap(path, w > mWidthPixels ? mWidthPixels : w, h > mHeightPixels ? mHeightPixels : h);
+        Bitmap bitmap = BitmapUtil.decodeSampledBitmap(inputPath, Math.min(w, mWidthPixels), Math.min(h, mHeightPixels));
 
         if (bitmap == null) {
             Log.e(TAG, "Clip bitmap is null");
@@ -174,7 +174,7 @@ public class ClipViewLayout extends RelativeLayout {
         }
 
         //竖屏拍照的照片，直接使用的话，会旋转90度，下面代码把角度旋转过来
-        int rotation = getExifOrientation(path); //查询旋转角度
+        int rotation = getExifOrientation(inputPath); //查询旋转角度
         Matrix m = new Matrix();
         m.setRotate(rotation);
         bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, true);

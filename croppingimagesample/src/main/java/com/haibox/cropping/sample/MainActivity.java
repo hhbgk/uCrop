@@ -9,12 +9,9 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.MediaStore;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 
-import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -24,13 +21,16 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
-import com.haibox.cropimage.ClipImageActivity;
 import com.haibox.cropimage.ClipView;
-import com.haibox.cropimage.util.FileUtils;
+import com.haibox.cropimage.CroppingActivity;
 import com.haibox.cropping.sample.databinding.ActivityMainBinding;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private SelectionPopupWindow selectionPopup;
     private int selectType = -1;
+    private final String TMP_FILENAME = "cropping-image.jpeg";
     private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault());
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,41 +120,30 @@ public class MainActivity extends AppCompatActivity {
 
     private File photoFile = null;
     private Uri photoUri = null;
-    private final ActivityResultLauncher<Intent> launchTakePhoto = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
-        @Override
-        public void onActivityResult(ActivityResult result) {
-            if (result.getResultCode() == RESULT_OK) {
-//                binding.ivAvatar.setImageURI(photoUri);
-                Bitmap bitMap = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
-                binding.ivAvatar.setImageBitmap(bitMap);
-                gotoClipActivity(Uri.fromFile(photoFile));
+    private final ActivityResultLauncher<Uri> launchTakePicture = registerForActivityResult(
+            new ActivityResultContracts.TakePicture(), new ActivityResultCallback<Boolean>() {
+                @Override
+                public void onActivityResult(Boolean result) {
+                    if (result) {
+                        binding.ivAvatar.setImageURI(null);
+                        binding.ivAvatar.setImageURI(photoUri);
+
+                        gotoClipActivity(photoFile.getAbsolutePath());// take picture
+                    } else {
+                        Log.e(TAG, "Fail to take picture");
+                    }
+                }
+            });
+
+    private void takePicture() {
+        if (photoFile != null && photoFile.exists()) {
+            if (!photoFile.delete()) {
+                Log.e(TAG, "Delete failed");
             }
         }
-    });
-    private void takePicture() {
-        String filename = "img-" + simpleDateFormat.format(System.currentTimeMillis()) + ".jpg";
-        photoFile = new File(getExternalCacheDir(), filename);
-        Log.i(TAG, "file Path=" + photoFile.getAbsolutePath());
-
-//        String path = getExternalFilesDir(null).getAbsolutePath() + "/"+ filename;
-//        uri = FileProvider.getUriForFile(getApplicationContext(), getPackageName() + ".provider", file);
-
-       Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if (Build.VERSION.SDK_INT >= 24) {
-            // 设置7.0中共享文件，分享路径定义在xml/file_paths.xml
-            intent.setFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            Uri photoUri = FileProvider.getUriForFile(this, getPackageName() + ".provider", photoFile);
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
-            grantUriPermission(getPackageName(), photoUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-            Log.i(TAG, "getPath=" + photoUri.getPath());
-            Log.i(TAG, "getScheme=" + photoUri.getScheme());
-            Log.i(TAG, "getAuthority=" + photoUri.getAuthority());
-            Log.i(TAG, "uri=" + photoUri);
-        } else {
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
-        }
-        launchTakePhoto.launch(intent);
+        photoFile = new File(getExternalCacheDir(), TMP_FILENAME);
+        photoUri = FileProvider.getUriForFile(getApplicationContext(), getPackageName() + ".provider", photoFile);
+        launchTakePicture.launch(photoUri);
     }
 
     private void checkStoragePermission() {
@@ -174,6 +164,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
     private void launchPicturePicker() {
+        if (photoFile != null && photoFile.exists()) {
+            if (!photoFile.delete()) {
+                Log.e(TAG, "Delete failed");
+            }
+        }
         picturePicker.launch("image/*");
     }
 
@@ -184,48 +179,71 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 Log.i(TAG, "path=" + result.getPath());
-                gotoClipActivity(result);
+                binding.ivAvatar.setImageURI(result);
+                copyPicturePicker(result);// picture picker
             });
+
+    private void copyPicturePicker(final Uri uri) {
+        if (uri != null) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    InputStream inputStream;
+                    try {
+                        inputStream = getContentResolver().openInputStream(uri);
+                    } catch (FileNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                    photoFile = new File(getExternalCacheDir(), TMP_FILENAME);
+                    OutputStream outputStream;
+                    try {
+                        outputStream = new FileOutputStream(photoFile);
+                    } catch (FileNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 10, outputStream);
+                    runOnUiThread(() -> gotoClipActivity(photoFile.getAbsolutePath()));
+                    try {
+                        inputStream.close();
+                        outputStream.close();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }).start();
+        }
+    }
+
+    private void gotoClipActivity(String path) {
+        launcherCroppingActivity.launch(CroppingActivity.getClipIntent(MainActivity.this, path, selectType));
+    }
 
     private final ActivityResultLauncher<Intent> launcherCroppingActivity = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if(result.getResultCode() == Activity.RESULT_OK) {
-                    final Uri uri = result.getData().getData();
-                    if (uri == null) {
+                    Intent intent = result.getData();
+                    if (intent == null) {
                         return;
                     }
-                    int type = result.getData().getIntExtra(ClipImageActivity.KEY_CLIP_TYPE, -1);
-                    String cropImagePath = FileUtils.getPath(getApplicationContext(), uri);
-                    long fileSize = getFileSize(cropImagePath);
-                    Log.i(TAG, "onActivityResult: fileSize =" + fileSize * 1.0f / 1024 + "KB");
-                    Log.i(TAG, "type=" + type + ", uri=" + uri);
-                    Bitmap bitMap = BitmapFactory.decodeFile(cropImagePath);
-//                    binding.ivAvatar.setImageBitmap(bitMap);
-
-                    String filename = "img-" + simpleDateFormat.format(System.currentTimeMillis()) + ".jpg";
-                    File file = new File(getExternalCacheDir(), filename);
-                    saveBitmap(bitMap, file);
-                    if (type == ClipView.ClipType.CIRCLE) {
-                        binding.civAvatar1.setImageBitmap(bitMap);
-                    } else if (type == ClipView.ClipType.RECTANGLE) {
-                        binding.civAvatar2.setImageBitmap(bitMap);
-                    } else if (type == ClipView.ClipType.PALACE) {
-                        binding.civAvatar3.setImageBitmap(bitMap);
+                    int type = intent.getIntExtra(CroppingActivity.KEY_CLIP_TYPE, -1);
+                    byte[] bytes  = intent.getByteArrayExtra(CroppingActivity.KEY_RESULT_DATA);
+                    if (bytes != null) {
+                        Log.i(TAG, "onActivityResult: bytes =" + bytes.length * 1.0f / 1024 + "KB");
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                        if (type == ClipView.ClipType.CIRCLE) {
+                            binding.civAvatar1.setImageBitmap(bitmap);
+                        } else if (type == ClipView.ClipType.RECTANGLE) {
+                            binding.civAvatar2.setImageBitmap(bitmap);
+                        } else if (type == ClipView.ClipType.PALACE) {
+                            binding.civAvatar3.setImageBitmap(bitmap);
+                        }
+                    } else {
+                        Log.e(TAG, "bitmap is null");
                     }
                 }
             });
-
-    private void gotoClipActivity(Uri uri) {
-        launcherCroppingActivity.launch(ClipImageActivity.getClipIntent(this, uri, selectType));
-    }
-
-    private static long getFileSize(String path) {
-        if (TextUtils.isEmpty(path) || !new File(path).exists()) {
-            return 0L;
-        }
-
-        return new File(path).length();
-    }
 
     private void saveBitmap(Bitmap bitmap, @NonNull File file) {
         Log.i(TAG, "saveBitmapToSDCard: " + file.getAbsolutePath());
