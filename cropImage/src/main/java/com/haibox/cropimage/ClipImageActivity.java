@@ -20,6 +20,7 @@ import java.io.OutputStream;
 /**
  * 头像裁剪Activity
  */
+@Deprecated
 public class ClipImageActivity extends AppCompatActivity {
     private static final String TAG = "ClipImageActivity";
     private ActivityClipImageBinding binding;
@@ -44,7 +45,7 @@ public class ClipImageActivity extends AppCompatActivity {
         binding.clipViewLayout.setVisibility(View.VISIBLE);
         Uri uri = getIntent().getData();
         //设置图片资源
-        binding.clipViewLayout.setImageSrc(uri);
+//        binding.clipViewLayout.setImageSrc(uri);
         mType = getIntent().getIntExtra(KEY_CLIP_TYPE, ClipView.ClipType.CIRCLE);
         Log.i(TAG, "onCreate: Type =" + mType + ", " + uri);
 
