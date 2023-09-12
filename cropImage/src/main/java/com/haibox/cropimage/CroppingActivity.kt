@@ -6,12 +6,11 @@ import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import androidx.appcompat.app.AppCompatActivity
 import com.haibox.cropimage.databinding.ActivityClipImageBinding
 import java.io.ByteArrayOutputStream
 
 
-class CroppingActivity: AppCompatActivity() {
+class CroppingActivity: Activity() {
     companion object {
         private const val TAG = "ClipImageActivity"
         const val KEY_CLIP_TYPE = "clip_type"

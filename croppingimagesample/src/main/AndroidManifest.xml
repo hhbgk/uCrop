@@ -26,7 +26,10 @@
             </intent-filter>
         </activity>
 
-        <activity android:exported="false" android:name="com.haibox.cropimage.CroppingActivity" />
+        <activity
+            android:exported="false"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:name="com.haibox.cropimage.CroppingActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
