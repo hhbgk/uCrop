@@ -1,52 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black"
-    android:fitsSystemWindows="true"
-    android:orientation="vertical">
+    android:fitsSystemWindows="true">
+
+    <com.haibox.cropimage.ClipViewLayout
+        android:id="@+id/clipViewLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:clipBorderWidth="1dp"
+        app:clipType="circle"
+        app:horizontalPadding="80dp" />
 
     <RelativeLayout
         android:id="@+id/rlTopBar"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:background="@drawable/bg_btn_gray_bound">
+        android:gravity="center"
+        android:layout_margin="48dp"
+        android:layout_gravity="bottom">
 
         <TextView
             android:id="@+id/btn_cancel"
-            android:layout_width="80dp"
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_alignTop="@+id/btn_ok"
             android:layout_alignParentStart="true"
             android:layout_alignParentLeft="true"
-            android:drawableStart="@drawable/ic_close"
             android:gravity="center_vertical|start"
+            android:text="@android:string/cancel"
             android:padding="10dp"
             android:textColor="@android:color/white"
             android:textSize="16sp" />
 
         <TextView
             android:id="@+id/btn_ok"
-            android:layout_width="80dp"
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_alignParentEnd="true"
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
-            android:drawableEnd="@drawable/ic_done"
             android:gravity="center_vertical|end"
+            android:text="@android:string/ok"
             android:padding="10dp"
             android:textColor="@android:color/white"
             android:textSize="16sp" />
     </RelativeLayout>
 
-    <com.haibox.cropimage.ClipViewLayout
-        android:id="@+id/clipViewLayout"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        app:clipBorderWidth="1dp"
-        app:clipType="circle"
-        app:horizontalPadding="80dp" />
-
-</LinearLayout>
+</FrameLayout>

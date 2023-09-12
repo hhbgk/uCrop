@@ -92,13 +92,13 @@ public class ClipView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        Log.i(TAG, "onDraw: clipType =" + clipType);
+//        Log.i(TAG, "onDraw: clipType =" + clipType);
 
         //通过Xfermode的DST_OUT来产生中间的透明裁剪区域，一定要另起一个Layer（层）
         canvas.saveLayer(0, 0, this.getWidth(), this.getHeight(), null, Canvas.ALL_SAVE_FLAG);
 
         //设置背景
-        canvas.drawColor(Color.parseColor("#a8000000"));
+        canvas.drawColor(Color.parseColor("#99000000"));
         paint.setXfermode(xfermode);
         //绘制圆形裁剪框
         if (clipType == ClipView.ClipType.CIRCLE) {
