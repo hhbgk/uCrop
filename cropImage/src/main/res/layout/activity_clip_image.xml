@@ -13,7 +13,7 @@
         android:layout_height="match_parent"
         app:clipBorderWidth="1dp"
         app:clipType="circle"
-        app:horizontalPadding="80dp" />
+        app:horizontalPadding="40dp" />
 
     <RelativeLayout
         android:id="@+id/rlTopBar"
