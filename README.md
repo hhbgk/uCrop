@@ -1,3 +1,9 @@
+# corpImage
+1. Take photo use system app and then finish cropping photo.
+2. Pick a picture from Mobile Album and finish cropping photo.
+
+<img src=https://github.com/hhbgk/uCrop/blob/develop/pic/cropImage.png width=320> <img src=https://github.com/hhbgk/uCrop/blob/develop/pic/cropImage2.png width=320> 
+
 # uCrop - Image Cropping Library for Android
 
 #### This project aims to provide an ultimate and flexible image cropping experience. Made in [Yalantis](https://yalantis.com/?utm_source=github)
